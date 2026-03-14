@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: svmgpt-backend
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.10.0" # Stable modern version for Render
+      - key: GEMINI_API_KEY
+        sync: false # Requires manual entry on Dashboard
