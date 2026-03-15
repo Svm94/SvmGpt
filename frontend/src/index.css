@@ -707,3 +707,328 @@ body {
     padding: 0 1.2rem;
   }
 }
+
+/* =========================================
+   Routine View Wrapper
+   ========================================= */
+.routine-view-wrapper {
+  grid-column: 2 / -1; /* span across both main + right-sidebar columns */
+  overflow: hidden;
+}
+
+/* =========================================
+   Full Routine Screen
+   ========================================= */
+.routine-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  color: #f0f0f5;
+}
+
+.routine-screen-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 1rem;
+  color: rgba(255,255,255,0.5);
+  font-size: 1rem;
+}
+
+.loading-mandala {
+  font-size: 3rem;
+  animation: spin 4s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.routine-screen-header {
+  padding: 2rem 2.5rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+
+.routine-screen-title {
+  font-family: 'Cinzel', serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0;
+  color: #ede7f6;
+  letter-spacing: 1px;
+}
+
+.routine-day-badge {
+  background: rgba(255,215,0,0.12);
+  color: #ffd700;
+  border: 1px solid rgba(255,215,0,0.25);
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* Scrollable content area */
+.routine-screen-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.routine-screen-content::-webkit-scrollbar { width: 6px; }
+.routine-screen-content::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 10px;
+}
+
+/* =========================================
+   Deity Banner Card
+   ========================================= */
+.deity-banner {
+  border-radius: 20px;
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+  min-height: 120px;
+}
+
+.deity-glow {
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  opacity: 0.15;
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+.deity-symbol {
+  font-size: 3.5rem;
+  line-height: 1;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+  flex-shrink: 0;
+}
+
+.deity-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.deity-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+}
+
+.deity-name {
+  font-family: 'Cinzel', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.1;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+.deity-subtitle {
+  font-size: 1rem;
+  color: rgba(255,255,255,0.7);
+  font-style: italic;
+}
+
+/* =========================================
+   General Info Cards
+   ========================================= */
+.routine-full-card {
+  background: rgba(25, 20, 40, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-left: 3px solid var(--card-accent, #ffd700);
+  border-radius: 16px;
+  padding: 1.5rem 1.75rem;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.routine-full-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+}
+
+.routine-full-card-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.45);
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.routine-full-quote {
+  margin: 0 0 0.75rem 0;
+  font-style: italic;
+  font-size: 1.15rem;
+  color: #e8e0f5;
+  line-height: 1.7;
+}
+
+.routine-full-card-source {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.4);
+  font-style: italic;
+}
+
+.routine-full-text {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.75;
+  color: #cfd8dc;
+}
+
+/* Prayer card special styling */
+.prayer-card {
+  background: rgba(40, 15, 60, 0.65);
+}
+
+.routine-full-prayer {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #ffcc80;
+  line-height: 1.6;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+/* =========================================
+   Set Reminder Button
+   ========================================= */
+.set-reminder-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0 2rem;
+}
+
+.reminder-status {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.65);
+  text-align: center;
+}
+
+.set-reminder-btn {
+  width: 100%;
+  max-width: 400px;
+  padding: 1.1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  border: 1px solid;
+  border-radius: 50px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.set-reminder-btn:hover {
+  transform: translateY(-3px) scale(1.02);
+}
+
+.set-reminder-btn.reminder-btn-active {
+  cursor: default;
+}
+
+/* =========================================
+   Sidebar shortcut button (on Chat view)
+   ========================================= */
+.sidebar-routine-btn {
+  margin-top: auto;
+  width: 100%;
+  padding: 12px;
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  color: #ffd700;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.sidebar-routine-btn:hover {
+  background: rgba(255, 215, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+/* =========================================
+   Responsive – Routine Screen
+   ========================================= */
+@media (max-width: 1024px) {
+  .routine-view-wrapper {
+    grid-column: 2 / -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .routine-view-wrapper {
+    grid-column: 1;
+  }
+
+  .routine-screen-header {
+    padding: 1.25rem 1.25rem 0.75rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .routine-screen-title {
+    font-size: 1.4rem;
+  }
+
+  .routine-screen-content {
+    padding: 1.25rem;
+    gap: 1.25rem;
+  }
+
+  .deity-banner {
+    padding: 1.5rem;
+    gap: 1rem;
+  }
+
+  .deity-name {
+    font-size: 1.5rem;
+  }
+
+  .deity-symbol {
+    font-size: 2.5rem;
+  }
+
+  .set-reminder-btn {
+    font-size: 1rem;
+    padding: 1rem 1.5rem;
+  }
+}

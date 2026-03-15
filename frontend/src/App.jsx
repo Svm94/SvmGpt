@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './index.css';
+import RoutineScreen from './RoutineScreen';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
@@ -14,6 +15,7 @@ function App() {
   const [messageCount, setMessageCount] = useState(0);
   const [showPaywall, setShowPaywall] = useState(false);
   const [bgIndex, setBgIndex] = useState(0);
+  const [activeView, setActiveView] = useState('chat'); // 'chat' | 'routine'
   const backgroundImages = ['/bg.png', '/bg_1.png', '/bg_2.png', '/bg_3.png'];
   const messagesEndRef = useRef(null);
 
@@ -39,7 +41,7 @@ function App() {
         const data = await response.json();
         setRoutine(data);
         
-        // Sync background change with the minute (using modulo on minute parsing to rotate predictably)
+        // Sync background change with the minute
         const currentMinute = new Date().getMinutes();
         const newBgIndex = currentMinute % backgroundImages.length;
         if (newBgIndex !== bgIndex) {
@@ -55,7 +57,7 @@ function App() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    // Check Freemium Limits (Limit free users to 3 messages per session)
+    // Check Freemium Limits
     if (!isPremium && messageCount >= 3) {
       setShowPaywall(true);
       return;
@@ -76,8 +78,6 @@ function App() {
       if (response.ok) {
         const data = await response.json();
         setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
-        
-        // Only increment the count if a successful message was sent
         if (!isPremium) {
            setMessageCount(prev => prev + 1);
         }
@@ -96,7 +96,6 @@ function App() {
     if (!isPremium) {
       setShowPaywall(true);
     } else {
-      // In the future, this would navigate to the actual feature component
       alert("This premium feature is coming soon!");
     }
   };
@@ -109,7 +108,7 @@ function App() {
         transition: 'background-image 2s ease-in-out'
       }}
     >
-      {/* --- NEW LEFT NAVIGATION SIDEBAR --- */}
+      {/* LEFT NAVIGATION SIDEBAR */}
       <nav className="left-sidebar">
         <div className="sidebar-logo">
           <h2>SvmGpt</h2>
@@ -121,9 +120,19 @@ function App() {
         </div>
         
         <ul className="nav-menu">
-          <li className="nav-item active">
+          <li
+            className={`nav-item ${activeView === 'chat' ? 'active' : ''}`}
+            onClick={() => setActiveView('chat')}
+          >
             <span className="icon">💬</span>
             <span className="label">Spiritual Chat</span>
+          </li>
+          <li
+            className={`nav-item ${activeView === 'routine' ? 'active' : ''}`}
+            onClick={() => setActiveView('routine')}
+          >
+            <span className="icon">📅</span>
+            <span className="label">Daily Routine</span>
           </li>
           <li className="nav-item locked" onClick={handleLockedFeatureClick}>
             <span className="icon">✨</span>
@@ -147,82 +156,98 @@ function App() {
         </div>
       </nav>
 
-      <div className="main-content">
-        <header className="app-header">
-          <div className="header-title-container">
-            <h1>SvmGpt</h1>
-          </div>
-          <p className="subtitle">Wisdom from the Inner You & Beyond</p>
-        </header>
-        
-        <main className="chat-container">
-          <div className="messages-area">
-            {messages.map((msg, idx) => (
-              <div key={idx} className={`message-wrapper ${msg.role}`}>
-                <div className={`message-bubble ${msg.role}`}>
-                  {msg.content}
-                </div>
+      {/* MAIN CONTENT AREA — switches between Chat and Routine */}
+      {activeView === 'routine' ? (
+        <div className="main-content routine-view-wrapper">
+          <RoutineScreen routine={routine} />
+        </div>
+      ) : (
+        <>
+          <div className="main-content">
+            <header className="app-header">
+              <div className="header-title-container">
+                <h1>SvmGpt</h1>
               </div>
-            ))}
-            {isLoading && (
-              <div className="message-wrapper assistant">
-                <div className="message-bubble assistant loading">
-                  <span className="dot"></span>
-                  <span className="dot"></span>
-                  <span className="dot"></span>
-                </div>
+              <p className="subtitle">Wisdom from the Inner You &amp; Beyond</p>
+            </header>
+            
+            <main className="chat-container">
+              <div className="messages-area">
+                {messages.map((msg, idx) => (
+                  <div key={idx} className={`message-wrapper ${msg.role}`}>
+                    <div className={`message-bubble ${msg.role}`}>
+                      {msg.content}
+                    </div>
+                  </div>
+                ))}
+                {isLoading && (
+                  <div className="message-wrapper assistant">
+                    <div className="message-bubble assistant loading">
+                      <span className="dot"></span>
+                      <span className="dot"></span>
+                      <span className="dot"></span>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+              
+              <form className="input-area" onSubmit={handleSendMessage}>
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Ask for guidance or a verse..."
+                  disabled={isLoading}
+                />
+                <button type="submit" disabled={isLoading || !input.trim()}>
+                  Send
+                </button>
+              </form>
+            </main>
+          </div>
+
+          <aside className="sidebar">
+            {routine ? (
+              <div className="routine-card fade-in">
+                <h2>Today's Focus</h2>
+                <div className="time-badge">{routine.day} • {routine.time}</div>
+                
+                <section className="routine-section">
+                  <h3>Deity</h3>
+                  <p>{routine.god}</p>
+                </section>
+
+                <section className="routine-section">
+                  <h3>Current Wisdom</h3>
+                  <blockquote className="quote">"{routine.quote}"</blockquote>
+                </section>
+
+                <section className="routine-section">
+                  <h3>Routine &amp; Exercise</h3>
+                  <p>{routine.routine}</p>
+                </section>
+
+                <section className="routine-section">
+                  <h3>Prayer</h3>
+                  <p className="prayer">{routine.prayer}</p>
+                </section>
+
+                <button
+                  className="sidebar-routine-btn"
+                  onClick={() => setActiveView('routine')}
+                >
+                  📅 Full Daily Routine →
+                </button>
+              </div>
+            ) : (
+              <div className="routine-card loading-state">
+                Loading routines...
               </div>
             )}
-            <div ref={messagesEndRef} />
-          </div>
-          
-          <form className="input-area" onSubmit={handleSendMessage}>
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask for guidance or a verse..."
-              disabled={isLoading}
-            />
-            <button type="submit" disabled={isLoading || !input.trim()}>
-              Send
-            </button>
-          </form>
-        </main>
-      </div>
-
-      <aside className="sidebar">
-        {routine ? (
-          <div className="routine-card fade-in">
-            <h2>Today's Focus</h2>
-            <div className="time-badge">{routine.day} • {routine.time}</div>
-            
-            <section className="routine-section">
-              <h3>Deity</h3>
-              <p>{routine.god}</p>
-            </section>
-
-            <section className="routine-section">
-              <h3>Current Wisdom</h3>
-              <blockquote className="quote">"{routine.quote}"</blockquote>
-            </section>
-
-            <section className="routine-section">
-              <h3>Routine & Exercise</h3>
-              <p>{routine.routine}</p>
-            </section>
-
-            <section className="routine-section">
-              <h3>Prayer</h3>
-              <p className="prayer">{routine.prayer}</p>
-            </section>
-          </div>
-        ) : (
-          <div className="routine-card loading-state">
-            Loading routines...
-          </div>
-        )}
-      </aside>
+          </aside>
+        </>
+      )}
 
       {/* Premium Subscription Paywall Modal */}
       {showPaywall && (
