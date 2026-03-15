@@ -97,18 +97,23 @@ def _doc_to_state(data: dict) -> RoutineState:
 
 def get_subscription_state(uid: str) -> RoutineState:
     """Read subscription state from Firestore."""
-    snap = _user_ref(uid).get()
-    if not snap.exists:
-        return RoutineState(
-            is_subscribed=False,
-            subscription_id=None,
-            expiry_at=None,
-            grace_until=None,
-            last_sync_at=None,
-            cached_routine_version=None,
-            chat_balance=7,
-        )
-    return _doc_to_state(snap.to_dict())
+    fallback_state = RoutineState(
+        is_subscribed=False,
+        subscription_id=None,
+        expiry_at=None,
+        grace_until=None,
+        last_sync_at=None,
+        cached_routine_version=None,
+        chat_balance=7,
+    )
+    try:
+        snap = _user_ref(uid).get()
+        if not snap.exists:
+            return fallback_state
+        return _doc_to_state(snap.to_dict())
+    except Exception as e:
+        print(f"Warning: Firebase Admin not initialized or unavailable. Error: {e}")
+        return fallback_state
 
 
 def set_subscription(uid: str, subscription_id: str, duration_days: int = 30) -> RoutineState:
@@ -166,27 +171,31 @@ def decrement_chat_balance(uid: str) -> bool:
     Returns True if allowed (either they have unlimited subscription OR balance > 0).
     Returns False if balance is 0 and they are not subscribed.
     """
-    ref = _user_ref(uid)
-    snap = ref.get()
-    
-    if not snap.exists:
-        # First time user. Default balance 7. Decrement by 1 leaves 6.
-        ref.set({'chatBalance': 6}, merge=True)
+    try:
+        ref = _user_ref(uid)
+        snap = ref.get()
+        
+        if not snap.exists:
+            # First time user. Default balance 7. Decrement by 1 leaves 6.
+            ref.set({'chatBalance': 6}, merge=True)
+            return True
+            
+        state = _doc_to_state(snap.to_dict())
+        
+        # Unlimited for subscribed users
+        if state.is_subscribed:
+            return True
+            
+        # Check balance
+        if state.chat_balance <= 0:
+            return False
+            
+        # Decrement balance atomically
+        ref.set({'chatBalance': firestore.Increment(-1)}, merge=True)
         return True
-        
-    state = _doc_to_state(snap.to_dict())
-    
-    # Unlimited for subscribed users
-    if state.is_subscribed:
+    except Exception as e:
+        print(f"Warning: Firebase Admin not initialized or unavailable. Falling back to allow chat. Error: {e}")
         return True
-        
-    # Check balance
-    if state.chat_balance <= 0:
-        return False
-        
-    # Decrement balance atomically
-    ref.set({'chatBalance': firestore.Increment(-1)}, merge=True)
-    return True
 
 
 def verify_google_play_purchase(purchase_token, product_id, is_subscription=False):
