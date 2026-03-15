@@ -23,6 +23,7 @@ from googleapiclient.discovery import build
 # Firebase Admin is initialized only once (in main.py via init_firebase())
 import firebase_admin
 from firebase_admin import credentials, firestore
+from google.cloud import firestore_v1
 
 # Constants - Update these with your real Play Store details
 PACKAGE_NAME = "com.svmgpt.app"  # Your Package Name
@@ -209,39 +210,44 @@ def add_chat_balance(uid: str, amount: int) -> RoutineState:
 
 def decrement_chat_balance(uid: str) -> bool:
     """
-    Deducts 1 chat from the user's balance.
-    Returns True if allowed (either they have unlimited subscription OR balance > 0).
+    Deducts 1 chat from the user's balance atomically.
+    Returns True if allowed (unlimited subscription OR balance > 0).
     Returns False if balance is 0 and they are not subscribed.
     """
     if not _is_firebase_initialized():
-        print("Warning: Firebase Admin not initialized, allowing chat without decrement.")
-        return True
+        print("Warning: Firebase Admin not initialized. Blocking chat to prevent revenue loss.")
+        return False
 
     try:
-        ref = _user_ref(uid)
-        snap = ref.get()
-        
-        if not snap.exists:
-            # First time user. Default balance 7. Decrement by 1 leaves 6.
-            ref.set({'chatBalance': 6}, merge=True)
+        db = _get_db()
+        user_ref = db.collection('users').document(uid)
+        user_doc = user_ref.get()
+
+        if not user_doc.exists:
+            # Initialize user if they magically don't exist yet but give them the initial 7 chats
+            # so they aren't fully blocked (optional, keeping backward compatibility)
+            user_ref.set({'chatBalance': 6}, merge=True)
             return True
             
-        state = _doc_to_state(snap.to_dict())
+        data = user_doc.to_dict()
         
-        # Unlimited for subscribed users
-        if state.is_subscribed:
+        # Unlimited Plan (₹500) - No deduction needed
+        if data.get("isSubscribed"):
             return True
-            
-        # Check balance
-        if state.chat_balance <= 0:
+
+        # Check if they have Prana left
+        if data.get("chatBalance", 0) <= 0:
             return False
-            
-        # Decrement balance atomically
-        ref.set({'chatBalance': firestore.Increment(-1)}, merge=True)
+
+        # THE ATOMIC DEDUCTION
+        user_ref.update({
+            "chatBalance": firestore_v1.Increment(-1)
+        })
         return True
     except Exception as e:
-        print(f"Warning: Firebase Admin error in decrement_chat_balance. Falling back to allow chat. Error: {e}")
-        return True
+        print(f"Error: Database deduction failed: {e}")
+        # Return False to fail securely instead of allowing unlimited free messages
+        return False
 
 
 def verify_google_play_purchase(purchase_token, product_id, is_subscription=False):
