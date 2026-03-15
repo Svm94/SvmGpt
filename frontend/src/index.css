@@ -36,12 +36,13 @@ body {
 
 .dashboard-layout {
   display: grid;
-  grid-template-columns: 260px 1fr 320px;
+  /* 2-column: nav sidebar + 1fr main area */
+  grid-template-columns: 260px 1fr;
 }
 
 @media (max-width: 1024px) {
   .dashboard-layout {
-    grid-template-columns: 200px 1fr;
+    grid-template-columns: 80px 1fr;
   }
 }
 
@@ -1030,5 +1031,243 @@ body {
   .set-reminder-btn {
     font-size: 1rem;
     padding: 1rem 1.5rem;
+  }
+}
+
+/* =========================================
+   Chat Layout — 3-Section Structure
+   ========================================= */
+
+/* The outer flex column that holds all 3 sections */
+.chat-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden; /* prevents outer scroll; inner sections scroll */
+}
+
+/* ─── SECTION 1: Today's Focus Header ─── */
+.todays-focus-header {
+  flex-shrink: 0;
+  background: rgba(15, 12, 28, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 215, 0, 0.12);
+  padding: 1rem 1.5rem;
+}
+
+.focus-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.focus-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #ffd700;
+}
+
+.focus-day-badge {
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  color: #ffd700;
+  border-radius: 20px;
+  padding: 3px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.focus-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 1.5rem;
+}
+
+.focus-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.focus-item-wide {
+  grid-column: 1 / -1;
+}
+
+.focus-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.focus-value {
+  font-size: 0.9rem;
+  color: #e8e0f5;
+  line-height: 1.4;
+}
+
+.focus-prayer {
+  color: #ffb74d;
+  font-weight: 600;
+}
+
+.focus-quote {
+  font-style: italic;
+  color: #cfd8dc;
+  border-left: 2px solid rgba(255, 215, 0, 0.4);
+  padding-left: 0.6rem;
+  /* clamp long quotes to 2 lines */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.focus-loading {
+  color: rgba(255,255,255,0.4);
+  font-size: 0.9rem;
+  padding: 0.5rem 0;
+  font-style: italic;
+}
+
+/* ─── SECTION 2: Chat (scrollable) ─── */
+.chat-section {
+  flex: 1;           /* takes all remaining vertical space */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;  /* lets .messages-area handle the scroll */
+  min-height: 0;     /* critical: allows flex children to shrink properly */
+}
+
+.chat-section .messages-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  /* smooth scroll inertia on mobile */
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  min-height: 0;
+}
+
+.chat-section .messages-area::-webkit-scrollbar { width: 5px; }
+.chat-section .messages-area::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 10px;
+}
+
+/* Keep input area pinned at bottom of chat-section */
+.chat-section .input-area {
+  flex-shrink: 0;
+  padding: 0.75rem 1.25rem;
+}
+
+/* ─── SECTION 3: View Full Routine CTA ─── */
+.routine-cta-bar {
+  flex-shrink: 0;
+  padding: 0.6rem 1.25rem;
+  background: rgba(10, 8, 20, 0.6);
+  border-top: 1px solid rgba(255, 215, 0, 0.1);
+}
+
+.view-full-routine-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.1rem;
+  background: rgba(255, 215, 0, 0.07);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: left;
+}
+
+.view-full-routine-btn:hover {
+  background: rgba(255, 215, 0, 0.14);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(255, 215, 0, 0.12);
+}
+
+.routine-cta-icon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.routine-cta-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.routine-cta-text strong {
+  color: #ffd700;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.routine-cta-text small {
+  color: rgba(255,255,255,0.45);
+  font-size: 0.75rem;
+}
+
+.routine-cta-arrow {
+  color: #ffd700;
+  font-size: 1.2rem;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+/* ─── Responsive overrides for new layout ─── */
+@media (max-width: 768px) {
+  .todays-focus-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .focus-grid {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+
+  /* On mobile: don't clamp the quote since grid is now single-column */
+  .focus-quote {
+    -webkit-line-clamp: 3;
+  }
+
+  .chat-section .messages-area {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .chat-section .input-area {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .routine-cta-bar {
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .todays-focus-header {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .focus-title {
+    font-size: 0.75rem;
+  }
+
+  .focus-value {
+    font-size: 0.82rem;
   }
 }

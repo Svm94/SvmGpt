@@ -21,7 +21,6 @@ function App() {
 
   useEffect(() => {
     fetchRoutine();
-    // Refresh routine every 10 seconds to catch minute changes promptly
     const interval = setInterval(fetchRoutine, 10000);
     return () => clearInterval(interval);
   }, []);
@@ -40,13 +39,9 @@ function App() {
       if (response.ok) {
         const data = await response.json();
         setRoutine(data);
-        
-        // Sync background change with the minute
         const currentMinute = new Date().getMinutes();
         const newBgIndex = currentMinute % backgroundImages.length;
-        if (newBgIndex !== bgIndex) {
-            setBgIndex(newBgIndex);
-        }
+        if (newBgIndex !== bgIndex) setBgIndex(newBgIndex);
       }
     } catch (error) {
       console.error('Error fetching routine:', error);
@@ -57,7 +52,6 @@ function App() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    // Check Freemium Limits
     if (!isPremium && messageCount >= 3) {
       setShowPaywall(true);
       return;
@@ -78,9 +72,7 @@ function App() {
       if (response.ok) {
         const data = await response.json();
         setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
-        if (!isPremium) {
-           setMessageCount(prev => prev + 1);
-        }
+        if (!isPremium) setMessageCount(prev => prev + 1);
       } else {
         setMessages(prev => [...prev, { role: 'assistant', content: 'Connection error. Please try again.' }]);
       }
@@ -91,52 +83,40 @@ function App() {
     }
   };
 
-  const handleLockedFeatureClick = (e) => {
-    e.preventDefault();
-    if (!isPremium) {
-      setShowPaywall(true);
-    } else {
-      alert("This premium feature is coming soon!");
-    }
+  const handleLockedFeatureClick = () => {
+    if (!isPremium) setShowPaywall(true);
+    else alert("This premium feature is coming soon!");
   };
 
   return (
-    <div 
+    <div
       className="app-container dashboard-layout"
       style={{
         backgroundImage: `url(${backgroundImages[bgIndex]})`,
         transition: 'background-image 2s ease-in-out'
       }}
     >
-      {/* LEFT NAVIGATION SIDEBAR */}
+      {/* ── LEFT NAV SIDEBAR ── */}
       <nav className="left-sidebar">
         <div className="sidebar-logo">
           <h2>SvmGpt</h2>
-          {isPremium ? (
-            <span className="premium-badge active">Premium</span>
-          ) : (
-            <span className="premium-badge free">Free Tier</span>
-          )}
+          <span className={`premium-badge ${isPremium ? 'active' : 'free'}`}>
+            {isPremium ? 'Premium' : 'Free Tier'}
+          </span>
         </div>
-        
+
         <ul className="nav-menu">
-          <li
-            className={`nav-item ${activeView === 'chat' ? 'active' : ''}`}
-            onClick={() => setActiveView('chat')}
-          >
+          <li className={`nav-item ${activeView === 'chat' ? 'active' : ''}`} onClick={() => setActiveView('chat')}>
             <span className="icon">💬</span>
             <span className="label">Spiritual Chat</span>
           </li>
-          <li
-            className={`nav-item ${activeView === 'routine' ? 'active' : ''}`}
-            onClick={() => setActiveView('routine')}
-          >
+          <li className={`nav-item ${activeView === 'routine' ? 'active' : ''}`} onClick={() => setActiveView('routine')}>
             <span className="icon">📅</span>
             <span className="label">Daily Routine</span>
           </li>
           <li className="nav-item locked" onClick={handleLockedFeatureClick}>
             <span className="icon">✨</span>
-            <span className="label">Kundli & Astrology</span>
+            <span className="label">Kundli &amp; Astrology</span>
             {!isPremium && <span className="lock-icon">🔒</span>}
           </li>
           <li className="nav-item locked" onClick={handleLockedFeatureClick}>
@@ -156,134 +136,130 @@ function App() {
         </div>
       </nav>
 
-      {/* MAIN CONTENT AREA — switches between Chat and Routine */}
+      {/* ── MAIN AREA ── */}
       {activeView === 'routine' ? (
+
+        /* —— ROUTINE SCREEN —— */
         <div className="main-content routine-view-wrapper">
           <RoutineScreen routine={routine} />
         </div>
+
       ) : (
-        <>
-          <div className="main-content">
-            <header className="app-header">
-              <div className="header-title-container">
-                <h1>SvmGpt</h1>
-              </div>
-              <p className="subtitle">Wisdom from the Inner You &amp; Beyond</p>
-            </header>
-            
-            <main className="chat-container">
-              <div className="messages-area">
-                {messages.map((msg, idx) => (
-                  <div key={idx} className={`message-wrapper ${msg.role}`}>
-                    <div className={`message-bubble ${msg.role}`}>
-                      {msg.content}
-                    </div>
-                  </div>
-                ))}
-                {isLoading && (
-                  <div className="message-wrapper assistant">
-                    <div className="message-bubble assistant loading">
-                      <span className="dot"></span>
-                      <span className="dot"></span>
-                      <span className="dot"></span>
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-              
-              <form className="input-area" onSubmit={handleSendMessage}>
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Ask for guidance or a verse..."
-                  disabled={isLoading}
-                />
-                <button type="submit" disabled={isLoading || !input.trim()}>
-                  Send
-                </button>
-              </form>
-            </main>
-          </div>
 
-          <aside className="sidebar">
+        /* —— CHAT SCREEN (3 sections) —— */
+        <div className="main-content chat-layout">
+
+          {/* ① TOP: Today's Focus */}
+          <section className="todays-focus-header">
             {routine ? (
-              <div className="routine-card fade-in">
-                <h2>Today's Focus</h2>
-                <div className="time-badge">{routine.day} • {routine.time}</div>
-                
-                <section className="routine-section">
-                  <h3>Deity</h3>
-                  <p>{routine.god}</p>
-                </section>
+              <>
+                <div className="focus-top-row">
+                  <span className="focus-title">Today's Focus</span>
+                  <span className="focus-day-badge">{routine.day} • {routine.time}</span>
+                </div>
 
-                <section className="routine-section">
-                  <h3>Current Wisdom</h3>
-                  <blockquote className="quote">"{routine.quote}"</blockquote>
-                </section>
-
-                <section className="routine-section">
-                  <h3>Routine &amp; Exercise</h3>
-                  <p>{routine.routine}</p>
-                </section>
-
-                <section className="routine-section">
-                  <h3>Prayer</h3>
-                  <p className="prayer">{routine.prayer}</p>
-                </section>
-
-                <button
-                  className="sidebar-routine-btn"
-                  onClick={() => setActiveView('routine')}
-                >
-                  📅 Full Daily Routine →
-                </button>
-              </div>
+                <div className="focus-grid">
+                  <div className="focus-item">
+                    <span className="focus-label">🕉️ Deity</span>
+                    <span className="focus-value">{routine.god}</span>
+                  </div>
+                  <div className="focus-item">
+                    <span className="focus-label">📿 Prayer</span>
+                    <span className="focus-value focus-prayer">{routine.prayer}</span>
+                  </div>
+                  <div className="focus-item focus-item-wide">
+                    <span className="focus-label">💡 Current Wisdom</span>
+                    <span className="focus-value focus-quote">"{routine.quote}"</span>
+                  </div>
+                  <div className="focus-item focus-item-wide">
+                    <span className="focus-label">⚡ Routine &amp; Exercise</span>
+                    <span className="focus-value">{routine.routine}</span>
+                  </div>
+                </div>
+              </>
             ) : (
-              <div className="routine-card loading-state">
-                Loading routines...
-              </div>
+              <div className="focus-loading">Loading today's blessings...</div>
             )}
-          </aside>
-        </>
+          </section>
+
+          {/* ② MIDDLE: Chat (scrollable) */}
+          <section className="chat-section">
+            <div className="messages-area">
+              {messages.map((msg, idx) => (
+                <div key={idx} className={`message-wrapper ${msg.role}`}>
+                  <div className={`message-bubble ${msg.role}`}>
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+              {isLoading && (
+                <div className="message-wrapper assistant">
+                  <div className="message-bubble assistant loading">
+                    <span className="dot"></span>
+                    <span className="dot"></span>
+                    <span className="dot"></span>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input (fixed to bottom of chat section) */}
+            <form className="input-area" onSubmit={handleSendMessage}>
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Ask for guidance or a verse..."
+                disabled={isLoading}
+              />
+              <button type="submit" disabled={isLoading || !input.trim()}>
+                Send
+              </button>
+            </form>
+          </section>
+
+          {/* ③ BOTTOM: View Full Routine */}
+          <section className="routine-cta-bar">
+            <button
+              className="view-full-routine-btn"
+              onClick={() => setActiveView('routine')}
+            >
+              <span className="routine-cta-icon">📅</span>
+              <span className="routine-cta-text">
+                <strong>View Full Daily Routine</strong>
+                <small>Deity focus, exercises &amp; prayers</small>
+              </span>
+              <span className="routine-cta-arrow">→</span>
+            </button>
+          </section>
+
+        </div>
       )}
 
-      {/* Premium Subscription Paywall Modal */}
+      {/* ── PAYWALL MODAL ── */}
       {showPaywall && (
         <div className="paywall-overlay fade-in">
           <div className="paywall-modal">
             <h2>Unlock SvmGpt Premium</h2>
             <p className="paywall-desc">
-              You've reached your daily limit of 3 free spiritual insights. 
-              Upgrade to Premium to continue your journey deeply into the self.
+              You've reached your daily limit of 3 free spiritual insights.
+              Upgrade to continue your journey.
             </p>
-            
             <ul className="premium-features">
               <li>✨ Unlimited Daily Messages</li>
               <li>🧘‍♂️ Personalized Spiritual Coaching</li>
               <li>🕉️ Direct Astrological Insights</li>
               <li>🎧 Exclusive Audio Meditations</li>
             </ul>
-
             <div className="pricing">
               <span className="price">Free</span>
-              <span className="period">Forever</span>
+              <span className="period"> Forever</span>
             </div>
-
-            <button 
-              className="upgrade-btn glowing" 
-              onClick={() => {
-                setIsPremium(true);
-                setShowPaywall(false);
-              }}
-            >
+            <button className="upgrade-btn glowing" onClick={() => { setIsPremium(true); setShowPaywall(false); }}>
               Unlock Premium for Free
             </button>
-            <button 
-              className="close-paywall-btn" 
-              onClick={() => setShowPaywall(false)}
-            >
+            <button className="close-paywall-btn" onClick={() => setShowPaywall(false)}>
               Maybe Later
             </button>
           </div>
