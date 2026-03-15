@@ -10,3 +10,4 @@ pypdf
 beautifulsoup4
 requests
 python-dateutil
+firebase-admin

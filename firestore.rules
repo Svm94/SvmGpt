@@ -1,0 +1,21 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users collection: users/{uid}/...
+    // Each user can only read/write their own document.
+    // Backend service account bypasses these rules.
+    match /users/{uid} {
+      // Authenticated user can read their own subscription state
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      // Users cannot write isSubscribed directly from the client.
+      // Only the backend (service account) writes isSubscribed.
+      // Clients can write any field EXCEPT isSubscribed and subscriptionId.
+      allow write: if request.auth != null
+                   && request.auth.uid == uid
+                   && !('isSubscribed' in request.resource.data)
+                   && !('subscriptionId' in request.resource.data);
+    }
+  }
+}

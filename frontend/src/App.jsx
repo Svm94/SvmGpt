@@ -4,7 +4,7 @@ import RoutineScreen from './RoutineScreen';
 import PaywallScreen from './PaywallScreen';
 import { useSubscription } from './useSubscription';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
 
 // Views: 'chat' | 'paywall' | 'routine'
 function App() {
@@ -14,9 +14,7 @@ function App() {
   const [input, setInput] = useState('');
   const [routine, setRoutine] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [showPremiumPaywall, setShowPremiumPaywall] = useState(false); // chat limit paywall
-  const [isPremium, setIsPremium] = useState(false);
-  const [messageCount, setMessageCount] = useState(0);
+  const [showPremiumPaywall, setShowPremiumPaywall] = useState(false); // Refill Prana modal
   const [bgIndex, setBgIndex] = useState(0);
   const [activeView, setActiveView] = useState('chat');
   const [successToast, setSuccessToast] = useState('');
@@ -83,10 +81,25 @@ function App() {
     setActiveView('chat');
   };
 
+  // ── Refill / Token Purchase ──────────────────────────────────────────────
+  const handleRefill = async (productId) => {
+    const result = await subscription.subscribe(productId);
+    if (result?.success) {
+      setShowPremiumPaywall(false);
+      showToast(productId === 'svmgpt_routine_monthly' 
+        ? '🎉 Welcome to Full Daily Routine & Unlimited Insights!' 
+        : '✨ Prana Refilled Successfully!');
+    }
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
-    if (!isPremium && messageCount >= 3) { setShowPremiumPaywall(true); return; }
+    
+    if (!subscription.isSubscribed && subscription.chatBalance <= 0) { 
+      setShowPremiumPaywall(true); 
+      return; 
+    }
 
     const userMsg = input.trim();
     setInput('');
@@ -97,12 +110,15 @@ function App() {
       const response = await fetch(`${API_BASE_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMsg }),
+        body: JSON.stringify({ uid: subscription.uid, message: userMsg }),
       });
       if (response.ok) {
         const data = await response.json();
         setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
-        if (!isPremium) setMessageCount(prev => prev + 1);
+      } else if (response.status === 403) {
+        setShowPremiumPaywall(true);
+        // Remove the optimistically added user message since it failed
+        setMessages(prev => prev.slice(0, -1));
       } else {
         setMessages(prev => [...prev, { role: 'assistant', content: 'Connection error. Please try again.' }]);
       }
@@ -114,7 +130,7 @@ function App() {
   };
 
   const handleLockedFeatureClick = () => {
-    if (!isPremium) setShowPremiumPaywall(true);
+    if (!subscription.isSubscribed) setShowPremiumPaywall(true);
     else alert('This premium feature is coming soon!');
   };
 
@@ -134,8 +150,8 @@ function App() {
       <nav className="left-sidebar">
         <div className="sidebar-logo">
           <h2>SvmGpt</h2>
-          <span className={`premium-badge ${isPremium ? 'active' : 'free'}`}>
-            {isPremium ? 'Premium' : 'Free Tier'}
+          <span className={`premium-badge ${subscription.isSubscribed ? 'active' : 'free'}`}>
+            {subscription.isSubscribed ? 'Premium' : 'Free Tier'}
           </span>
         </div>
 
@@ -156,15 +172,15 @@ function App() {
           </li>
           <li className="nav-item locked" onClick={handleLockedFeatureClick}>
             <span className="icon">✨</span><span className="label">Kundli &amp; Astrology</span>
-            {!isPremium && <span className="lock-icon">🔒</span>}
+            {!subscription.isSubscribed && <span className="lock-icon">🔒</span>}
           </li>
           <li className="nav-item locked" onClick={handleLockedFeatureClick}>
             <span className="icon">🎧</span><span className="label">Guided Meditations</span>
-            {!isPremium && <span className="lock-icon">🔒</span>}
+            {!subscription.isSubscribed && <span className="lock-icon">🔒</span>}
           </li>
           <li className="nav-item locked" onClick={handleLockedFeatureClick}>
             <span className="icon">🛍️</span><span className="label">Spiritual Shop</span>
-            {!isPremium && <span className="lock-icon">🔒</span>}
+            {!subscription.isSubscribed && <span className="lock-icon">🔒</span>}
           </li>
         </ul>
 
@@ -244,6 +260,15 @@ function App() {
 
           {/* ② CHAT section */}
           <section className="chat-section">
+            
+            {/* PRANA / ENERGY BAR */}
+            <div className="prana-bar">
+              <span className="prana-label">✨ Divine Insights (Prana):</span>
+              <span className={`prana-value ${!subscription.isSubscribed && subscription.chatBalance <= 0 ? 'empty' : ''}`}>
+                {subscription.isSubscribed ? 'Unlimited' : subscription.chatBalance}
+              </span>
+            </div>
+
             <div className="messages-area">
               {messages.map((msg, idx) => (
                 <div key={idx} className={`message-wrapper ${msg.role}`}>
@@ -265,10 +290,10 @@ function App() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask for guidance or a verse..."
-                disabled={isLoading}
+                placeholder={!subscription.isSubscribed && subscription.chatBalance <= 0 ? "Out of Divine Insights. Please refill." : "Ask for guidance or a verse..."}
+                disabled={isLoading || (!subscription.isSubscribed && subscription.chatBalance <= 0)}
               />
-              <button type="submit" disabled={isLoading || !input.trim()}>Send</button>
+              <button type="submit" disabled={isLoading || !input.trim() || (!subscription.isSubscribed && subscription.chatBalance <= 0)}>Send</button>
             </form>
           </section>
 
@@ -293,26 +318,41 @@ function App() {
         </div>
       )}
 
-      {/* ── CHAT LIMIT PAYWALL MODAL ── */}
+      {/* ── REFILL PRANA MODAL ── */}
       {showPremiumPaywall && (
         <div className="paywall-overlay fade-in">
           <div className="paywall-modal">
-            <h2>Unlock SvmGpt Premium</h2>
+            <h2>Refill Your Prana</h2>
             <p className="paywall-desc">
-              You've reached your limit of 3 free messages. Upgrade to continue your journey.
+              You are out of Divine Insights. Please refill or subscribe to continue your spiritual journey.
             </p>
-            <ul className="premium-features">
-              <li>✨ Unlimited Daily Messages</li>
-              <li>🧘‍♂️ Personalized Spiritual Coaching</li>
-              <li>🕉️ Direct Astrological Insights</li>
-              <li>🎧 Exclusive Audio Meditations</li>
-            </ul>
-            <div className="pricing">
-              <span className="price">Free</span><span className="period"> Forever</span>
+            
+            <div className="refill-options">
+              <div className="refill-option" onClick={() => handleRefill('svmgpt_chat_50')}>
+                <div className="refill-title">20 Insights</div>
+                <div className="refill-price">₹50</div>
+                <button className="refill-btn" disabled={subscription.loading}>
+                  {subscription.loading ? '...' : 'Buy'}
+                </button>
+              </div>
+              
+              <div className="refill-option" onClick={() => handleRefill('svmgpt_chat_200')}>
+                <div className="refill-title">50 Insights</div>
+                <div className="refill-price">₹200</div>
+                <button className="refill-btn" disabled={subscription.loading}>
+                  {subscription.loading ? '...' : 'Buy'}
+                </button>
+              </div>
+              
+              <div className="refill-option premium-option" onClick={() => handleRefill('svmgpt_routine_monthly')}>
+                <div className="refill-title">Unlimited Insights + Daily Routine</div>
+                <div className="refill-price">₹500 <small>/mo</small></div>
+                <button className="refill-btn glowing" disabled={subscription.loading}>
+                  {subscription.loading ? '...' : 'Subscribe'}
+                </button>
+              </div>
             </div>
-            <button className="upgrade-btn glowing" onClick={() => { setIsPremium(true); setShowPremiumPaywall(false); }}>
-              Unlock Premium for Free
-            </button>
+
             <button className="close-paywall-btn" onClick={() => setShowPremiumPaywall(false)}>
               Maybe Later
             </button>

@@ -1610,3 +1610,121 @@ body {
     padding: 1rem;
   }
 }
+
+/* =========================================
+   Prana Energy Bar
+   ========================================= */
+.prana-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(30, 30, 42, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 10px 20px;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.prana-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ffd700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.prana-value {
+  background: rgba(255, 215, 0, 0.2);
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border: 1px solid rgba(255, 215, 0, 0.4);
+}
+
+.prana-value.empty {
+  background: rgba(244, 67, 54, 0.2);
+  color: #ffcdd2;
+  border-color: rgba(244, 67, 54, 0.4);
+}
+
+/* =========================================
+   Refill Options (3 Tiers)
+   ========================================= */
+.refill-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 25px;
+}
+
+.refill-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 15px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.refill-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.premium-option {
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.premium-option:hover {
+  background: rgba(255, 215, 0, 0.15);
+}
+
+.refill-title {
+  font-weight: 600;
+  color: #fff;
+  font-size: 1rem;
+  text-align: left;
+}
+
+.refill-price {
+  font-weight: 700;
+  color: #ffd700;
+  font-size: 1.1rem;
+  min-width: 60px;
+  text-align: center;
+}
+
+.refill-price small {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.refill-btn {
+  background: linear-gradient(135deg, #ffd700, #ff8c00);
+  color: #000;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.refill-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+.refill-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+

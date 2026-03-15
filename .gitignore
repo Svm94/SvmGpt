@@ -1,0 +1,10 @@
+# Ignore sensitive and temporary files
+serviceAccountKey.json
+.env
+.venv/
+__pycache__/
+*.pyc
+ngrok.exe
+ngrok.zip
+test_api.ps1
+.DS_Store
