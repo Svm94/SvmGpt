@@ -64,10 +64,17 @@ class RoutineState:
 
 # ── Firestore helpers ─────────────────────────────────────────────────────────
 
+def _is_firebase_initialized() -> bool:
+    try:
+        return bool(firebase_admin._apps)
+    except AttributeError:
+        return False
+
 def _get_db():
     """Return Firestore client (requires firebase_admin already initialized)."""
+    if not _is_firebase_initialized():
+        raise RuntimeError("Firebase Admin is not initialized")
     return firestore.client()
-
 
 def _user_ref(uid: str):
     return _get_db().collection('users').document(uid)
@@ -106,13 +113,17 @@ def get_subscription_state(uid: str) -> RoutineState:
         cached_routine_version=None,
         chat_balance=7,
     )
+    if not _is_firebase_initialized():
+        print("Warning: Firebase Admin not initialized, returning fallback state in get_subscription_state")
+        return fallback_state
+
     try:
         snap = _user_ref(uid).get()
         if not snap.exists:
             return fallback_state
         return _doc_to_state(snap.to_dict())
     except Exception as e:
-        print(f"Warning: Firebase Admin not initialized or unavailable. Error: {e}")
+        print(f"Warning: Firebase Admin error in get_subscription_state. Error: {e}")
         return fallback_state
 
 
@@ -130,11 +141,23 @@ def set_subscription(uid: str, subscription_id: str, duration_days: int = 30) ->
         'subscriptionId':        subscription_id,
         'expiryAt':              expiry,
         'graceUntil':            grace,
-        'lastSyncAt':            firestore.SERVER_TIMESTAMP,
+        'lastSyncAt':            now,
         'cachedRoutineVersion':  'v1',
     }
-    _user_ref(uid).set(data, merge=True)
-    return _doc_to_state({**data, 'lastSyncAt': now})
+    
+    if not _is_firebase_initialized():
+        print("Warning: Firebase Admin not initialized, skipping set_subscription Firestore write.")
+        state = _doc_to_state(data)
+        return state
+
+    try:
+        data['lastSyncAt'] = firestore.SERVER_TIMESTAMP
+        _user_ref(uid).set(data, merge=True)
+        return _doc_to_state({**data, 'lastSyncAt': now})
+    except Exception as e:
+        print(f"Warning: Firebase Admin error in set_subscription. Error: {e}")
+        state = _doc_to_state(data)
+        return state
 
 
 def revoke_subscription(uid: str) -> RoutineState:
@@ -143,25 +166,44 @@ def revoke_subscription(uid: str) -> RoutineState:
     now   = datetime.datetime.now(datetime.timezone.utc)
     grace = (state.expiry_at + datetime.timedelta(hours=GRACE_HOURS)
              if state.expiry_at else now)
-    _user_ref(uid).set({
-        'isSubscribed': False,
-        'graceUntil':   grace,
-        'lastSyncAt':   firestore.SERVER_TIMESTAMP,
-    }, merge=True)
+    if not _is_firebase_initialized():
+        print("Warning: Firebase Admin not initialized, skipping revoke_subscription Firestore write.")
+        state.is_subscribed = False
+        state.grace_until = grace
+        return state
+
+    try:
+        _user_ref(uid).set({
+            'isSubscribed': False,
+            'graceUntil':   grace,
+            'lastSyncAt':   firestore.SERVER_TIMESTAMP,
+        }, merge=True)
+    except Exception as e:
+        print(f"Warning: Firebase Admin error in revoke_subscription. Error: {e}")
+        
     return get_subscription_state(uid)
 
 
 def add_chat_balance(uid: str, amount: int) -> RoutineState:
     """Adds consumable tokens to the user's chat balance."""
-    ref = _user_ref(uid)
-    snap = ref.get()
-    
-    if not snap.exists:
-        # Document does not exist, initialize it with default + amount
-        ref.set({'chatBalance': 7 + amount}, merge=True)
-    else:
-        # Document exists, increment it using firestore atomic operation
-        ref.set({'chatBalance': firestore.Increment(amount)}, merge=True)
+    if not _is_firebase_initialized():
+        print("Warning: Firebase Admin not initialized, skipping add_chat_balance Firestore write.")
+        state = get_subscription_state(uid)
+        state.chat_balance += amount
+        return state
+
+    try:
+        ref = _user_ref(uid)
+        snap = ref.get()
+        
+        if not snap.exists:
+            # Document does not exist, initialize it with default + amount
+            ref.set({'chatBalance': 7 + amount}, merge=True)
+        else:
+            # Document exists, increment it using firestore atomic operation
+            ref.set({'chatBalance': firestore.Increment(amount)}, merge=True)
+    except Exception as e:
+        print(f"Warning: Firebase Admin error in add_chat_balance. Error: {e}")
         
     return get_subscription_state(uid)
 
@@ -171,6 +213,10 @@ def decrement_chat_balance(uid: str) -> bool:
     Returns True if allowed (either they have unlimited subscription OR balance > 0).
     Returns False if balance is 0 and they are not subscribed.
     """
+    if not _is_firebase_initialized():
+        print("Warning: Firebase Admin not initialized, allowing chat without decrement.")
+        return True
+
     try:
         ref = _user_ref(uid)
         snap = ref.get()
@@ -194,7 +240,7 @@ def decrement_chat_balance(uid: str) -> bool:
         ref.set({'chatBalance': firestore.Increment(-1)}, merge=True)
         return True
     except Exception as e:
-        print(f"Warning: Firebase Admin not initialized or unavailable. Falling back to allow chat. Error: {e}")
+        print(f"Warning: Firebase Admin error in decrement_chat_balance. Falling back to allow chat. Error: {e}")
         return True
 
 
